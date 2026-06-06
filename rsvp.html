@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RSVP</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body { font-family: Arial; background:#f7f2e8; padding:20px; }
+    .box { max-width:500px; margin:auto; background:#fff; padding:20px; border-radius:8px; }
+    input, select, button { width:100%; padding:10px; margin:10px 0; }
+    button { background:#5C1220; color:white; border:none; cursor:pointer; }
+    .hidden { display:none; }
+  </style>
+</head>
+
+<body>
+
+<div class="box">
+
+  <h2>Wedding RSVP</h2>
+
+  <!-- STEP 1: INVITE CODE -->
+  <div id="step1">
+    <label>Enter Invite Code</label>
+    <input id="code" placeholder="e.g. ABX93K">
+    <button onclick="lookup()">Continue</button>
+  </div>
+
+  <!-- STEP 2: RSVP FORM -->
+  <div id="step2" class="hidden">
+    <h3 id="guestName"></h3>
+
+    <label>Attendance</label>
+    <select id="attending">
+      <option value="yes">Attending</option>
+      <option value="no">Not attending</option>
+    </select>
+
+    <label>Meal</label>
+    <select id="meal">
+      <option>Standard</option>
+      <option>Vegetarian</option>
+      <option>Vegan</option>
+    </select>
+
+    <input id="dietary" placeholder="Dietary requirements">
+    <input id="song" placeholder="Song request">
+
+    <button onclick="submitRsvp()">Submit RSVP</button>
+  </div>
+
+  <p id="done" class="hidden">Thank you! RSVP saved.</p>
+
+</div>
+
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_AUTH",
+  projectId: "YOUR_PROJECT_ID",
+  appId: "YOUR_APP_ID"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let currentCode = null;
+let currentGuest = null;
+
+window.lookup = async function () {
+  const code = document.getElementById("code").value.trim().toUpperCase();
+
+  const ref = doc(db, "guests", code);
+  const snap = await getDoc(ref);
+
+  if (!snap.exists()) {
+    alert("Invalid code");
+    return;
+  }
+
+  currentCode = code;
+  currentGuest = snap.data();
+
+  document.getElementById("step1").classList.add("hidden");
+  document.getElementById("step2").classList.remove("hidden");
+
+  document.getElementById("guestName").innerText =
+    currentGuest.first + " " + currentGuest.last;
+};
+
+window.submitRsvp = async function () {
+
+  const data = {
+    attending: document.getElementById("attending").value,
+    meal: document.getElementById("meal").value,
+    dietary: document.getElementById("dietary").value,
+    song: document.getElementById("song").value,
+    guests: currentGuest.partySize
+  };
+
+  await setDoc(doc(db, "guests", currentCode), {
+    ...currentGuest,
+    rsvp: data
+  });
+
+  document.getElementById("step2").classList.add("hidden");
+  document.getElementById("done").classList.remove("hidden");
+};
+
+</script>
+
+</body>
+</html>
