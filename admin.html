@@ -1,0 +1,31 @@
+<h2>RSVP Tracker</h2>
+<div id="list"></div>
+
+<script type="module">
+import { getFirestore, collection, getDocs } 
+from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const db = getFirestore();
+
+async function load() {
+  const snap = await getDocs(collection(db, "guests"));
+
+  let html = "";
+
+  snap.forEach(d => {
+    const g = d.data();
+    if (!g.rsvp) return;
+
+    html += `
+      <p>
+        ${g.first} ${g.last} -
+        ${g.rsvp.attending}
+      </p>
+    `;
+  });
+
+  document.getElementById("list").innerHTML = html;
+}
+
+load();
+</script>
